@@ -7,9 +7,6 @@
 #define TRUE 1
 #define THREAD_NUM 5
 
-sem_t semMateriaEmpty;
-sem_t semMateriaFull;
-
 sem_t semCanetaEmpty;
 sem_t semCanetaFull;
 
@@ -17,30 +14,23 @@ pthread_mutex_t mutexMateria;
 
 pthread_mutex_t mutexCaneta;
 
-int maxStoreMateria = 100;
-int maxStoreCaneta = 100;
+int maxStoreCaneta = 100; //5
 
-int tempoEspera = 0;
-int tempoEnvio = 0;
-int tempoFazer = 0;
-int qntCanetas = 0;
-int qntEnviado = 0;
-int qntMateria = 0;
+int tempoEspera = 1; //7
+int tempoEnvio = 2; //3
+int tempoFazer = 3; //4
+
+int qntCanetas = 0; //6
+int qntEnviado = 0; //2
+
+int qntMateria = 100; //1
 
 //thread rank 1
 void *depositoMateria(void *args){
 
     while(TRUE){
 
-        sem_wait(&semMateriaEmpty);
-        pthread_mutex_lock(&mutexMateria);
-        qntMateria--;
-        pthread_mutex_unlock(&mutexMateria);
-        sem_post(&semMateriaFull);
-
-        printf("Enviou materia prima\n");
-
-        sleep(tempoEnvio);
+        sleep(tempoEnvio);        
     }
 }
 
@@ -48,15 +38,7 @@ void *depositoMateria(void *args){
 void *celulaFabricacao(void *args){
 
     while(TRUE){
-
-        sem_wait(&semMateriaFull);
-        pthread_mutex_lock(&mutexMateria);
-        // Fabricar canetas
-        pthread_mutex_unlock(&mutexMateria);
-        sem_post(&semMateriaEmpty);
-
-        printf("Produziu caneta\n");
-
+        
         sleep(tempoFazer);
     }
 }
@@ -109,9 +91,6 @@ int main(int argc, char* argv[]){
 
     pthread_mutex_init(&mutexCaneta, NULL);
 
-    sem_init(&semMateriaEmpty, 0, maxStoreMateria);
-    sem_init(&semMateriaFull, 0, 0);
-
     sem_init(&semCanetaEmpty, 0, maxStoreCaneta);
     sem_init(&semCanetaFull, 0, 0);
 
@@ -135,9 +114,6 @@ int main(int argc, char* argv[]){
             perror("Falha ao dar join");
         }
     }
-
-    sem_destroy(&semMateriaEmpty);
-    sem_destroy(&semMateriaFull);
 
     sem_destroy(&semCanetaEmpty);
     sem_destroy(&semCanetaFull);
