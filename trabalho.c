@@ -33,8 +33,8 @@ pthread_cond_t fabrica_cond = PTHREAD_COND_INITIALIZER;
 void *deposito_material(void *arg){
 
     char **argv = (char **)arg;
-    int material_enviado = atoi(argv[1]);
-    int tempo_envio_material = atoi(argv[2]);
+    int material_enviado = atoi(argv[2]);
+    int tempo_envio_material = atoi(argv[3]);
 
     while (TRUE){
         pthread_mutex_lock(&deposito_material_mutex);
@@ -57,7 +57,7 @@ void *deposito_material(void *arg){
 void *fabrica_caneta(void *arg){
 
     char **argv = (char **)arg;
-    int tempo_fabricacao = atoi(argv[3]);
+    int tempo_fabricacao = atoi(argv[4]);
 
     while (TRUE){
         pthread_mutex_lock(&deposito_material_mutex);
@@ -108,9 +108,9 @@ void *controle(void *arg){
 void *deposito_caneta(void *arg){
 
     char **argv = (char **)arg;
-    int canetas_compradas = atoi(argv[4]);
-    int canetas_enviadas = atoi(argv[6]);
-    int tempo_envio_caneta = atoi(argv[5]);
+    int canetas_compradas = atoi(argv[6]);
+    int canetas_enviadas = atoi(argv[5]);
+    int tempo_envio_caneta = atoi(argv[3]);
 
     while (TRUE){
         pthread_mutex_lock(&deposito_caneta_mutex);
@@ -133,7 +133,7 @@ void *deposito_caneta(void *arg){
 void *comprador(void *arg){
 
     char **argv = (char **)arg;
-    int canetas_compradas = atoi(argv[4]);
+    int canetas_compradas = atoi(argv[6]);
     int tempo_espera_compra = atoi(argv[7]);
 
     while (TRUE){
@@ -171,7 +171,7 @@ int main(int argc, char *argv[]){
 
     // Verificação dos argumentos de entrada
     if (argc != 8){
-        fprintf(stderr, "Uso: %s <qtde_enviada> <tempo_envio_material> <tempo_fabricar> <qtde_compradas> <tempo_envio_caneta> <max_canetas_enviadas> <tempo_compra>\n", argv[0]);
+        fprintf(stderr, "Uso: %s <qtde_enviada> <tempo_envio> <tempo_fabricar> <qtde_max_caneta> <qtde_compradas> <tempo_compra>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
