@@ -8,7 +8,11 @@ Projeto da disciplina SSC0640 - Sistemas Operacionais I, ministrada pelo profess
 - Thiago Kashivagi Gonçalves
 
   
-## Detalhes sobre o Projeto
+## Detalhes sobre o Trabalho
+Este trabalho visa desenvolver uma aplicação para simular uma fábrica de canetas em C, utilizando Pthreads, 
+semáforos e variáveis de condição, em Linux. A aplicação deve ser executada com 06 (seis) threads ao todo,
+as quais interagem nas atividades de: fabricação de canetas, armazenamento da matéria prima/canetas produzidas
+e na compra/venda. 
 
 
 
