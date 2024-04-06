@@ -1,3 +1,11 @@
+/*
+Leonardo Gueno Rissetto 13676482
+Lucas Lima Romero 13676325
+Luciano Gonçalves Lopes Filho 13676520
+Marco Antonio Gaspar Garcia 11833581
+Thiago Kashivagui Gonçalves 13676579
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
