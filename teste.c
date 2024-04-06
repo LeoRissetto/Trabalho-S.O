@@ -23,10 +23,9 @@ typedef struct {
 DepositoMaterial depositoMaterial = {100, 0};
 DepositoCaneta depositoCaneta = {0, 0};
 
-sem_t material_sem, caneta_sem;
+sem_t canetas_disponiveis;
 pthread_mutex_t deposito_material_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t deposito_caneta_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t deposito_caneta_cond = PTHREAD_COND_INITIALIZER;
 
 // Funções auxiliares
 void *deposito_material(void *arg){
@@ -37,7 +36,7 @@ void *deposito_material(void *arg){
 
     while (TRUE){
         pthread_mutex_lock(&deposito_material_mutex);
-        if (depositoMaterial.material < MAX_MATERIAL){
+        if (depositoMaterial.material >= material_enviado){
             depositoMaterial.material -= material_enviado;
             depositoMaterial.materialEnviado += material_enviado;
             printf("Depósito de matéria prima: enviado %d unidades, total: %d\n", material_enviado, depositoMaterial.material);
@@ -61,6 +60,7 @@ void *fabrica_caneta(void *arg){
             depositoMaterial.materialEnviado--;
             depositoCaneta.canetas++;
             printf("Célula de fabricação de canetas: fabricou 1 caneta, total: %d\n", depositoCaneta.canetas);
+            sem_post(&canetas_disponiveis); // Sinaliza que há canetas disponíveis
         }
         pthread_mutex_unlock(&deposito_caneta_mutex);
         pthread_mutex_unlock(&deposito_material_mutex);
@@ -73,26 +73,14 @@ void *fabrica_caneta(void *arg){
 void *controle(void *arg){
 
     char **argv = (char **)arg;
-    int material_desejado = atoi(argv[1]);
     int canetas_compradas = atoi(argv[6]);
 
     while (TRUE) {
-        pthread_mutex_lock(&deposito_material_mutex);
         pthread_mutex_lock(&deposito_caneta_mutex);
         if (depositoCaneta.canetas >= canetas_compradas) {
             printf("Depósito de canetas: capacidade suficiente para vender\n");
-            pthread_cond_signal(&deposito_caneta_cond);
         }
-        // Verifica se há material suficiente para transferir para a célula de fabricação
-        /*if (depositoMaterial.material >= material_desejado) {
-            printf("Controle: matéria prima disponível para transferência para a célula de fabricação\n");
-
-            // Sinaliza para a célula de fabricação que há material disponível
-            pthread_cond_signal(&deposito_caneta_cond);
-        }*/
         pthread_mutex_unlock(&deposito_caneta_mutex);
-        pthread_mutex_unlock(&deposito_material_mutex);
-
         sleep(1);
     }
 
@@ -111,7 +99,6 @@ void *deposito_caneta(void *arg){
             depositoCaneta.canetas -= canetas_enviadas;
             depositoCaneta.canetasEnviadas += canetas_enviadas;
             printf("Depósito de canetas: adicionado %d canetas, total: %d\n", canetas_enviadas, depositoCaneta.canetas);
-            pthread_cond_signal(&deposito_caneta_cond); // Notifica os compradores de que há canetas disponíveis
         }
         pthread_mutex_unlock(&deposito_caneta_mutex);
         sleep(tempo_envio_caneta);
@@ -127,14 +114,13 @@ void *comprador(void *arg){
     int tempo_espera_compra = atoi(argv[7]);
 
     while (TRUE){
+        sem_wait(&canetas_disponiveis); // Espera por canetas disponíveis
         pthread_mutex_lock(&deposito_caneta_mutex);
-        while (depositoCaneta.canetasEnviadas < canetas_compradas){
-            printf("Comprador: aguardando canetas disponíveis...\n");
-            pthread_cond_wait(&deposito_caneta_cond, &deposito_caneta_mutex);
+        if (depositoCaneta.canetasEnviadas >= canetas_compradas){
+            printf("Comprador: comprando %d canetas...\n", canetas_compradas);
+            depositoCaneta.canetasEnviadas -= canetas_compradas;
+            printf("Comprador: canetas compradas, total: %d\n", depositoCaneta.canetasEnviadas);
         }
-        printf("Comprador: comprando %d canetas...\n", canetas_compradas);
-        depositoCaneta.canetasEnviadas -= canetas_compradas;
-        printf("Comprador: canetas compradas, total: %d\n", depositoCaneta.canetasEnviadas);
         pthread_mutex_unlock(&deposito_caneta_mutex);
         sleep(tempo_espera_compra);
     }
@@ -150,9 +136,8 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    // Inicialização dos semáforos
-    sem_init(&material_sem, 0, 1);
-    sem_init(&caneta_sem, 0, 1);
+    // Inicialização do semáforo
+    sem_init(&canetas_disponiveis, 0, 0);
 
     // Inicialização das threads
     pthread_t threads[5];
@@ -167,9 +152,8 @@ int main(int argc, char *argv[]){
         pthread_join(threads[i], NULL);
     }
 
-    // Destruir os semáforos
-    sem_destroy(&material_sem);
-    sem_destroy(&caneta_sem);
+    // Destruir o semáforo
+    sem_destroy(&canetas_disponiveis);
 
     return 0;
 }
