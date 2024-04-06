@@ -3,7 +3,7 @@ Projeto da disciplina SSC0640 - Sistemas Operacionais I, ministrada pelo profess
 
 - Marco Antonio Gaspar Garcia 11833581
 - Leonardo Gueno Rissetto
-- Lucas Lima Romero
+- Lucas Lima Romero 13676325
 - Luciano Gonçalves Lopes Filho 13676520
 - Thiago Kashivagi Gonçalves
 
