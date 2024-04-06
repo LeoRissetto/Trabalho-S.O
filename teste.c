@@ -26,6 +26,7 @@ DepositoCaneta depositoCaneta = {0, 0};
 sem_t canetas_disponiveis;
 pthread_mutex_t deposito_material_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t deposito_caneta_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t deposito_caneta_cond = PTHREAD_COND_INITIALIZER;
 
 // Funções auxiliares
 void *deposito_material(void *arg){
@@ -77,8 +78,9 @@ void *controle(void *arg){
 
     while (TRUE) {
         pthread_mutex_lock(&deposito_caneta_mutex);
-        if (depositoCaneta.canetas >= canetas_compradas) {
+        if (depositoCaneta.canetasEnviadas >= canetas_compradas) {
             printf("Depósito de canetas: capacidade suficiente para vender\n");
+            pthread_cond_signal(&deposito_caneta_cond);
         }
         pthread_mutex_unlock(&deposito_caneta_mutex);
         sleep(1);
@@ -116,11 +118,13 @@ void *comprador(void *arg){
     while (TRUE){
         sem_wait(&canetas_disponiveis); // Espera por canetas disponíveis
         pthread_mutex_lock(&deposito_caneta_mutex);
-        if (depositoCaneta.canetasEnviadas >= canetas_compradas){
-            printf("Comprador: comprando %d canetas...\n", canetas_compradas);
-            depositoCaneta.canetasEnviadas -= canetas_compradas;
-            printf("Comprador: canetas compradas, total: %d\n", depositoCaneta.canetasEnviadas);
+        while (depositoCaneta.canetasEnviadas < canetas_compradas){
+            printf("Comprador: aguardando canetas disponíveis...\n");
+            pthread_cond_wait(&deposito_caneta_cond, &deposito_caneta_mutex);
         }
+        printf("Comprador: comprando %d canetas...\n", canetas_compradas);
+        depositoCaneta.canetasEnviadas -= canetas_compradas;
+        printf("Comprador: canetas compradas, total: %d\n", depositoCaneta.canetasEnviadas);
         pthread_mutex_unlock(&deposito_caneta_mutex);
         sleep(tempo_espera_compra);
     }
