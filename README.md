@@ -13,3 +13,4 @@ Projeto da disciplina SSC0640 - Sistemas Operacionais I, ministrada pelo profess
 
 
 ## Observações
+Para rodar o programa usar gcc -o executavel codigo_fonte.c -lpthread
