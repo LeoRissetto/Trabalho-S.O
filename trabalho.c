@@ -33,8 +33,8 @@ pthread_cond_t fabrica_cond = PTHREAD_COND_INITIALIZER;
 void *deposito_material(void *arg){
 
     char **argv = (char **)arg;
-    int material_enviado = atoi(argv[2]);
-    int tempo_envio_material = atoi(argv[3]);
+    int material_enviado = atoi(argv[1]);
+    int tempo_envio_material = atoi(argv[2]);
 
     while (TRUE){
         pthread_mutex_lock(&deposito_material_mutex);
@@ -57,7 +57,7 @@ void *deposito_material(void *arg){
 void *fabrica_caneta(void *arg){
 
     char **argv = (char **)arg;
-    int tempo_fabricacao = atoi(argv[4]);
+    int tempo_fabricacao = atoi(argv[3]);
 
     while (TRUE){
         pthread_mutex_lock(&deposito_material_mutex);
@@ -108,9 +108,9 @@ void *controle(void *arg){
 void *deposito_caneta(void *arg){
 
     char **argv = (char **)arg;
+    int canetas_enviadas = atoi(argv[4]);
+    int tempo_envio_caneta = atoi(argv[5]);
     int canetas_compradas = atoi(argv[6]);
-    int canetas_enviadas = atoi(argv[5]);
-    int tempo_envio_caneta = atoi(argv[3]);
 
     while (TRUE){
         pthread_mutex_lock(&deposito_caneta_mutex);
@@ -152,26 +152,11 @@ void *comprador(void *arg){
     return NULL;
 }
 
-void *encerrar(void *arg){
-
-    while(TRUE){
-        pthread_mutex_lock(&deposito_material_mutex);
-        pthread_mutex_lock(&deposito_caneta_mutex);
-        if(depositoMaterial.materialEnviado == 0 && depositoCaneta.canetasEnviadas == 0 && depositoCaneta.canetas == 0){
-            exit(0);
-        }
-        pthread_mutex_unlock(&deposito_caneta_mutex);
-        pthread_mutex_unlock(&deposito_material_mutex);
-    }
-
-    return NULL;
-}
-
 int main(int argc, char *argv[]){
 
     // Verificação dos argumentos de entrada
     if (argc != 8){
-        fprintf(stderr, "Uso: %s <qtde_enviada> <tempo_envio> <tempo_fabricar> <qtde_max_caneta> <qtde_compradas> <tempo_compra>\n", argv[0]);
+        fprintf(stderr, "Uso: %s <qtde_material_enviada> <tempo_envio_material> <tempo_fabricacao> <qtde_caneta_enviada> <tempo_envio_caneta> <qtde_caneta_compradas> <tempo_compra>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
@@ -179,16 +164,15 @@ int main(int argc, char *argv[]){
     sem_init(&canetas_disponiveis, 0, 0);
 
     // Inicialização das threads
-    pthread_t threads[6];
+    pthread_t threads[5];
     pthread_create(&threads[0], NULL, deposito_material, (void *)argv);
     pthread_create(&threads[1], NULL, fabrica_caneta, (void *)argv);
     pthread_create(&threads[2], NULL, controle, (void *)argv);
     pthread_create(&threads[3], NULL, deposito_caneta, (void *)argv);
     pthread_create(&threads[4], NULL, comprador, (void *)argv);
-    pthread_create(&threads[5], NULL, encerrar, (void *)argv);
 
     // Aguardar o término das threads
-    for (int i = 0; i < 6; ++i){
+    for (int i = 0; i < 5; ++i){
         pthread_join(threads[i], NULL);
     }
 
