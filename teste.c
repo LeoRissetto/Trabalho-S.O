@@ -30,25 +30,35 @@ DepositoMaterial depositoMaterial;
 DepositoCaneta depositoCaneta;
 
 sem_t fabrica;
+sem_t deposito;
+
+pthread_cond_t condicao = PTHREAD_COND_INITIALIZER;
 
 // Funções auxiliares
 void *deposito_material(){
 
     int qntEnviada = 1;
-    int tempoEnvio = 2;
+    int tempoEnvio = 1;
 
     while (TRUE) {
-        sem_wait(&depositoMaterial.mutex);
-        // Verifica se há material disponível antes de enviar
+        
+        //checar se o deposito de canetas esta cheio
         sem_wait(&depositoCaneta.empty);
+        sem_post(&depositoCaneta.empty);
+
+        sem_wait(&depositoMaterial.empty);
+        sem_wait(&depositoMaterial.mutex);
+
         depositoMaterial.material -= qntEnviada;
         depositoMaterial.materialEnviado += qntEnviada;
         printf("Depósito de Material: Enviando %d unidades de matéria-prima.\n", qntEnviada);
-        for(int i = 0; i < qntEnviada; i++) {
-            sem_wait(&depositoMaterial.empty);
+
+        for(int i = 0; i < qntEnviada; i++){
             sem_post(&depositoMaterial.full);
         }
+
         sem_post(&depositoMaterial.mutex);
+
         sleep(tempoEnvio);
     }
 
@@ -57,23 +67,26 @@ void *deposito_material(){
 
 void *fabrica_caneta(){
 
-    int tempoFabricacao = 2;
+    int tempoFabricacao = 1;
 
     while (TRUE) {
+
+        //checar se o deposito de canetas esta cheio
+        sem_wait(&depositoCaneta.empty);
+        sem_post(&depositoCaneta.empty);
+
+        sem_wait(&depositoMaterial.full);
         sem_wait(&depositoMaterial.mutex);
         sem_wait(&depositoCaneta.mutex);
-        // Verifica se há material disponível antes de iniciar a produção de canetas
-        sem_wait(&depositoCaneta.empty);
-        sem_wait(&depositoMaterial.full);
 
         depositoMaterial.materialEnviado--;
         depositoCaneta.canetas++;
         printf("Célula de fabricação de canetas: fabricou 1 caneta. Estoque: %d\n", depositoMaterial.materialEnviado);
 
-        sem_post(&fabrica);
-        
         sem_post(&depositoCaneta.mutex);
         sem_post(&depositoMaterial.mutex);
+        sem_post(&fabrica);
+
         sleep(tempoFabricacao);
     }
 
@@ -83,27 +96,29 @@ void *fabrica_caneta(){
 void *controle(){
 
     while(TRUE) {
-
+        
     }
 
     return NULL;
 }
 
 void *deposito_caneta(){
-    
+
     int qntEnviada = 1;
-    int tempoEnvio = 2;
+    int tempoEnvio = 1;
 
     while (TRUE) {
-        sem_wait(&depositoCaneta.mutex);
-        sem_wait(&depositoCaneta.empty);
         sem_wait(&fabrica);
-        // Verifica se há canetas disponíveis antes de enviar
+        sem_wait(&depositoCaneta.empty);
+        sem_wait(&depositoCaneta.mutex);
+
         depositoCaneta.canetasEnviadas += qntEnviada;
         depositoCaneta.canetas -= qntEnviada;
         printf("Depósito de Canetas: Enviadas %d canetas. Estoque: %d\n", qntEnviada, depositoCaneta.canetasEnviadas);
-        sem_post(&depositoCaneta.full);
+
         sem_post(&depositoCaneta.mutex);
+        sem_post(&depositoCaneta.full);
+
         sleep(tempoEnvio);
     }
 
@@ -112,16 +127,18 @@ void *deposito_caneta(){
 
 void *comprador(){
 
-    int tempoEspera = 2;
+    int tempoEspera = 1;
 
     while (TRUE) {
-        sem_wait(&depositoCaneta.mutex);
-        // Verifica se há canetas disponíveis para compra
         sem_wait(&depositoCaneta.full);
+        sem_wait(&depositoCaneta.mutex);
+
         depositoCaneta.canetasEnviadas -= QNT_COMPRADA;
         printf("Comprador: Comprou %d canetas.\n", QNT_COMPRADA);
-        sem_post(&depositoCaneta.full);
+
         sem_post(&depositoCaneta.mutex);
+        sem_post(&depositoCaneta.empty);
+
         sleep(tempoEspera);
     }
 
@@ -144,6 +161,7 @@ int main(int argc, char *argv[]){
     sem_init(&depositoCaneta.full, 0, 0);
 
     sem_init(&fabrica, 0, 0);
+    sem_init(&fabrica, 0, 1);
 
     // Inicialização das threads
     pthread_t threads[4];
