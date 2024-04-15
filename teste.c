@@ -181,7 +181,8 @@ void *encerrar(){
     while(TRUE){
         pthread_mutex_lock(&depositoMaterial.mutex);
         pthread_mutex_lock(&depositoCaneta.mutex);
-        if(depositoMaterial.material == 0 && depositoCaneta.canetas == 0 && depositoCaneta.canetasEnviadas == 0){
+        if(depositoMaterial.material == 0 && depositoCaneta.canetas == 0 &&
+         depositoCaneta.canetasEnviadas == 0 && depositoMaterial.materialEnviado == 0){
             exit(0);
         }
         pthread_mutex_unlock(&depositoMaterial.mutex);
