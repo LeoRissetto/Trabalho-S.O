@@ -175,6 +175,21 @@ void *comprador(){
     return NULL;
 }
 
+void *encerrar(){
+
+    while(TRUE){
+        pthread_mutex_lock(&depositoMaterial.mutex);
+        pthread_mutex_lock(&depositoCaneta.mutex);
+        if(depositoMaterial.material == 0 && depositoCaneta.canetas == 0 && depositoCaneta.canetasEnviadas == 0){
+            exit(0);
+        }
+        pthread_mutex_unlock(&depositoMaterial.mutex);
+        pthread_mutex_unlock(&depositoCaneta.mutex);
+    }
+
+    return NULL;
+}
+
 int main(int argc, char *argv[]){
     // Inicializando as variáveis e semáforos
     depositoMaterial.material = 28;
@@ -190,14 +205,15 @@ int main(int argc, char *argv[]){
     sem_init(&depositoCaneta.full, 0, 0);
 
     // Inicialização das threads
-    pthread_t threads[4];
+    pthread_t threads[5];
     pthread_create(&threads[0], NULL, deposito_material, NULL);
     pthread_create(&threads[1], NULL, fabrica_caneta, NULL);
     pthread_create(&threads[2], NULL, deposito_caneta, NULL);
     pthread_create(&threads[3], NULL, comprador, NULL);
+    pthread_create(&threads[4], NULL, encerrar, NULL);
 
     // Aguardar o término das threads
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 5; ++i) {
         pthread_join(threads[i], NULL);
     }
 
