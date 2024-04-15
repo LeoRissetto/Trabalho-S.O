@@ -33,8 +33,8 @@ pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
 // Funções auxiliares
 void *deposito_material(){
 
-    int qntEnviada = 1;
-    int tempoEnvio = 1;
+    int qntEnviada = 5;
+    int tempoEnvio = 3;
 
     while (TRUE) { 
         sem_wait(&depositoCaneta.empty);
@@ -109,7 +109,7 @@ void *controle(){
 
 void *deposito_caneta(){
 
-    int tempoEnvio = 1;
+    int tempoEnvio = 2;
     int qntEnviada;
 
     while (TRUE) {
@@ -147,7 +147,7 @@ void *deposito_caneta(){
 
 void *comprador(){
 
-    int tempoEspera = 1;
+    int tempoEspera = 5;
     int qntComprada = 2;
 
     while (TRUE) {
@@ -174,7 +174,7 @@ void *comprador(){
 
 int main(int argc, char *argv[]){
     // Inicializando as variáveis e semáforos
-    depositoMaterial.material = 10;
+    depositoMaterial.material = 28;
     depositoMaterial.materialEnviado = 0;
     pthread_mutex_init(&depositoMaterial.mutex, NULL);
     sem_init(&depositoMaterial.empty, 0, depositoMaterial.material);
