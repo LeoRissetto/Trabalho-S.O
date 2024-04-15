@@ -24,15 +24,9 @@ typedef struct {
     sem_t full;  // Semáforo para indicar se o depósito de canetas está cheio
 } DepositoCaneta;
 
-typedef struct {
-    int count;
-    sem_t mutex;
-} Controle;
-
 // Variáveis globais
 DepositoMaterial depositoMaterial;
 DepositoCaneta depositoCaneta;
-Controle controleStruct;
 
 sem_t fabrica;
 
@@ -43,7 +37,7 @@ void *deposito_material(){
     int tempoEnvio = 1;
 
     while (TRUE) { 
-        sem_wait(&controleStruct.mutex);
+        sem_wait(&depositoCaneta.empty);
 
         sem_wait(&depositoMaterial.empty);
         sem_wait(&depositoMaterial.mutex);
@@ -78,7 +72,7 @@ void *fabrica_caneta(){
     int tempoFabricacao = 1;
 
     while (TRUE) {
-        sem_wait(&controleStruct.mutex);
+        sem_wait(&depositoCaneta.empty);
 
         sem_wait(&depositoMaterial.full);
 
@@ -103,13 +97,7 @@ void *fabrica_caneta(){
 void *controle(){
 
     while(TRUE) {
-        sem_wait(&depositoCaneta.mutex);
-        if(depositoCaneta.canetasEnviadas < MAX_CANETAS){
-            if(controleStruct.count == 0){
-                sem_post(&controleStruct.mutex);
-            }
-        }
-        sem_post(&depositoCaneta.mutex);
+
     }
 
     return NULL;
@@ -189,9 +177,6 @@ int main(int argc, char *argv[]){
     sem_init(&depositoCaneta.mutex, 0, 1);
     sem_init(&depositoCaneta.empty, 0, MAX_CANETAS);
     sem_init(&depositoCaneta.full, 0, 0);
-
-    controleStruct.count = 0;
-    sem_init(&controleStruct.mutex, 0, 0);
 
     sem_init(&fabrica, 0, 0);
 
