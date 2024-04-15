@@ -154,7 +154,7 @@ void *comprador(){
         sem_wait(&depositoCaneta.full);
         pthread_mutex_lock(&depositoCaneta.mutex);
 
-        if(depositoCaneta.canetasEnviadas > qntComprada){
+        if(depositoCaneta.canetasEnviadas < qntComprada){
             qntComprada = depositoCaneta.canetasEnviadas;
         }
         depositoCaneta.canetasEnviadas -= qntComprada;
