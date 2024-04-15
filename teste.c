@@ -148,7 +148,7 @@ void *deposito_caneta(){
 void *comprador(){
 
     int tempoEspera = 5;
-    int qntComprada = 2;
+    int qntComprada = 3;
 
     while (TRUE) {
         sem_wait(&depositoCaneta.full);
