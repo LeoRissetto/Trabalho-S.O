@@ -11,7 +11,7 @@
 typedef struct {
     int material;
     int materialEnviado;
-    sem_t mutex;
+    pthread_mutex_t mutex;
     sem_t empty; // Semáforo para indicar se o depósito de material está vazio
     sem_t full;  // Semáforo para indicar se o depósito de material está cheio
 } DepositoMaterial;
@@ -19,7 +19,7 @@ typedef struct {
 typedef struct {
     int canetas;
     int canetasEnviadas;
-    sem_t mutex;
+    pthread_mutex_t mutex;
     sem_t empty; // Semáforo para indicar se o depósito de canetas está vazio
     sem_t full;  // Semáforo para indicar se o depósito de canetas está cheio
 } DepositoCaneta;
@@ -40,7 +40,7 @@ void *deposito_material(){
         sem_wait(&depositoCaneta.empty);
 
         sem_wait(&depositoMaterial.empty);
-        sem_wait(&depositoMaterial.mutex);
+        pthread_mutex_lock(&depositoMaterial.mutex);
 
         if(depositoMaterial.material == 0){
             qntEnviada = 0;
@@ -55,7 +55,7 @@ void *deposito_material(){
             printf("Depósito de Material: Enviando %d unidades de matéria-prima.\n", qntEnviada);
         }
 
-        sem_post(&depositoMaterial.mutex);
+        pthread_mutex_unlock(&depositoMaterial.mutex);
 
         for(int i = 0; i < qntEnviada; i++){
             sem_post(&depositoMaterial.full);
@@ -77,16 +77,16 @@ void *fabrica_caneta(){
         sem_wait(&depositoCaneta.empty);
 
         sem_wait(&depositoMaterial.full);
-        sem_wait(&depositoMaterial.mutex);
+        pthread_mutex_lock(&depositoMaterial.mutex);
 
-        sem_wait(&depositoCaneta.mutex);
+        pthread_mutex_lock(&depositoCaneta.mutex);
 
         depositoMaterial.materialEnviado--;
         depositoCaneta.canetas++;
         printf("Célula de fabricação de canetas: fabricou 1 caneta. Estoque: %d\n", depositoMaterial.materialEnviado);
 
-        sem_post(&depositoCaneta.mutex);
-        sem_post(&depositoMaterial.mutex);
+        pthread_mutex_unlock(&depositoCaneta.mutex);
+        pthread_mutex_unlock(&depositoMaterial.mutex);
 
         pthread_cond_signal(&condition);
 
@@ -120,7 +120,7 @@ void *deposito_caneta(){
         pthread_mutex_unlock(&depositoCaneta.mutex);
 
         sem_wait(&depositoCaneta.empty);
-        sem_wait(&depositoCaneta.mutex);
+        pthread_mutex_lock(&depositoCaneta.mutex);
 
         if(depositoCaneta.canetasEnviadas + depositoCaneta.canetas < MAX_CANETAS){
             qntEnviada = depositoCaneta.canetas;
@@ -133,7 +133,7 @@ void *deposito_caneta(){
         depositoCaneta.canetasEnviadas += qntEnviada;
         printf("Depósito de Canetas: Enviadas %d canetas. Estoque: %d\n", qntEnviada, depositoCaneta.canetasEnviadas);
 
-        sem_post(&depositoCaneta.mutex);
+        pthread_mutex_unlock(&depositoCaneta.mutex);
 
         for(int i = 0; i < qntEnviada; i++){
             sem_post(&depositoCaneta.full);
@@ -152,7 +152,7 @@ void *comprador(){
 
     while (TRUE) {
         sem_wait(&depositoCaneta.full);
-        sem_wait(&depositoCaneta.mutex);
+        pthread_mutex_lock(&depositoCaneta.mutex);
 
         if(depositoCaneta.canetasEnviadas < qntComprada){
             qntComprada = depositoCaneta.canetasEnviadas;
@@ -160,7 +160,7 @@ void *comprador(){
         depositoCaneta.canetasEnviadas -= qntComprada;
         printf("Comprador: Comprou %d canetas.\n", qntComprada);
 
-        sem_post(&depositoCaneta.mutex);
+        pthread_mutex_unlock(&depositoCaneta.mutex);
 
         for(int i = 0; i < qntComprada; i++){
             sem_post(&depositoCaneta.empty);
@@ -176,13 +176,13 @@ int main(int argc, char *argv[]){
     // Inicializando as variáveis e semáforos
     depositoMaterial.material = 10;
     depositoMaterial.materialEnviado = 0;
-    sem_init(&depositoMaterial.mutex, 0, 1);
+    pthread_mutex_init(&depositoMaterial.mutex, NULL);
     sem_init(&depositoMaterial.empty, 0, depositoMaterial.material);
     sem_init(&depositoMaterial.full, 0, 0);
 
     depositoCaneta.canetas = 0;
     depositoCaneta.canetasEnviadas = 0;
-    sem_init(&depositoCaneta.mutex, 0, 1);
+    pthread_mutex_init(&depositoCaneta.mutex, NULL);
     sem_init(&depositoCaneta.empty, 0, MAX_CANETAS);
     sem_init(&depositoCaneta.full, 0, 0);
 
