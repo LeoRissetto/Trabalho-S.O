@@ -28,9 +28,6 @@ typedef struct {
 DepositoMaterial depositoMaterial;
 DepositoCaneta depositoCaneta;
 
-sem_t fabrica;
-
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
 
 // Funções auxiliares
@@ -91,7 +88,7 @@ void *fabrica_caneta(){
         sem_post(&depositoCaneta.mutex);
         sem_post(&depositoMaterial.mutex);
 
-        sem_post(&fabrica);
+        pthread_cond_signal(&condition);
 
         sem_post(&depositoCaneta.empty);
 
@@ -116,7 +113,11 @@ void *deposito_caneta(){
     int qntEnviada;
 
     while (TRUE) {
-        sem_wait(&fabrica);
+        pthread_mutex_lock(&depositoCaneta.mutex);
+        while(depositoCaneta.canetas == 0){
+            pthread_cond_wait(&condition, &depositoCaneta.mutex);
+        }
+        pthread_mutex_unlock(&depositoCaneta.mutex);
 
         sem_wait(&depositoCaneta.empty);
         sem_wait(&depositoCaneta.mutex);
@@ -184,8 +185,6 @@ int main(int argc, char *argv[]){
     sem_init(&depositoCaneta.mutex, 0, 1);
     sem_init(&depositoCaneta.empty, 0, MAX_CANETAS);
     sem_init(&depositoCaneta.full, 0, 0);
-
-    sem_init(&fabrica, 0, 0);
 
     // Inicialização das threads
     pthread_t threads[4];
