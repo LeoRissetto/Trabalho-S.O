@@ -136,20 +136,18 @@ void *deposito_caneta(){
 void *comprador(){
 
     int tempoEspera = 5;
-    int qntComprada = 3;
+    int qntComprada;
 
     while (TRUE) {
         sem_wait(&depositoCaneta.full);
         pthread_mutex_lock(&depositoCaneta.mutex);
 
-        printf("CANETAS ENVIADAS: %d\n", depositoCaneta.canetasEnviadas);
+        qntComprada = 3;
 
         if(qntComprada > depositoCaneta.canetasEnviadas){
             qntComprada = depositoCaneta.canetasEnviadas;
         }
-        else{
-            qntComprada = 3;
-        }
+
         depositoCaneta.canetasEnviadas -= qntComprada;
         printf("Comprador: Comprou %d canetas.\n", qntComprada);
 
