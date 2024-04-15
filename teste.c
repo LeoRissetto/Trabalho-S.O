@@ -30,6 +30,9 @@ DepositoCaneta depositoCaneta;
 
 sem_t fabrica;
 
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
+
 // Funções auxiliares
 void *deposito_material(){
 
@@ -86,7 +89,7 @@ void *fabrica_caneta(){
         sem_post(&depositoCaneta.mutex);
         sem_post(&depositoMaterial.mutex);
 
-        sem_post(&fabrica);
+        ptheard_cond_signal(&condition);
 
         sleep(tempoFabricacao);
     }
@@ -109,10 +112,14 @@ void *deposito_caneta(){
     int qntEnviada;
 
     while (TRUE) {
-        sem_wait(&fabrica);
-
         sem_wait(&depositoCaneta.empty);
         sem_wait(&depositoCaneta.mutex);
+
+        pthread_mutex_lock(&mutex);
+        while(depositoCaneta.canetas == 0){
+            pthread_cond_wait(&condition, &mutex);
+        }
+        pthread_mutex_unlock(&mutex);
 
         if(depositoCaneta.canetasEnviadas + depositoCaneta.canetas < MAX_CANETAS){
             qntEnviada = depositoCaneta.canetas;
