@@ -121,7 +121,7 @@ void *deposito_caneta(){
 
         depositoCaneta.canetas--;
         depositoCaneta.canetasEnviadas++;
-        printf("Depósito de Canetas: Enviada 1 caneta. Estoque: %d\n", depositoCaneta.canetasEnviadas);
+        printf("Depósito de Canetas: Enviada 1 caneta. Estoque de canetas: %d\n", depositoCaneta.canetasEnviadas);
 
         pthread_mutex_unlock(&depositoCaneta.mutex);
 
@@ -141,6 +141,8 @@ void *comprador(){
     while (TRUE) {
         sem_wait(&depositoCaneta.full);
         pthread_mutex_lock(&depositoCaneta.mutex);
+
+        printf("CANETAS ENVIADAS: %d\n", depositoCaneta.canetasEnviadas);
 
         if(qntComprada > depositoCaneta.canetasEnviadas){
             qntComprada = depositoCaneta.canetasEnviadas;
