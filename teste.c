@@ -164,7 +164,6 @@ int main(int argc, char *argv[]){
     sem_init(&depositoCaneta.full, 0, 0);
 
     sem_init(&fabrica, 0, 0);
-    sem_init(&fabrica, 0, 1);
 
     // Inicialização das threads
     pthread_t threads[4];
