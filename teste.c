@@ -28,7 +28,7 @@ typedef struct {
 DepositoMaterial depositoMaterial;
 DepositoCaneta depositoCaneta;
 
-sem_t mutex;
+sem_t fabrica;
 
 // Funções auxiliares
 void *deposito_material(){
@@ -81,8 +81,6 @@ void *fabrica_caneta(){
 
         pthread_mutex_lock(&depositoCaneta.mutex);
 
-        int x = depositoCaneta.canetas;
-
         depositoMaterial.materialEnviado--;
         depositoCaneta.canetas++;
         printf("Célula de fabricação de canetas: fabricou 1 caneta. Estoque de Material: %d\n", depositoMaterial.materialEnviado);
@@ -90,9 +88,7 @@ void *fabrica_caneta(){
         pthread_mutex_unlock(&depositoCaneta.mutex);
         pthread_mutex_unlock(&depositoMaterial.mutex);
 
-        if(x == 0){
-            sem_post(&mutex);
-        }
+        sem_post(&fabrica);
 
         sem_post(&depositoCaneta.empty);
 
@@ -114,25 +110,17 @@ void *controle(){
 void *deposito_caneta(){
 
     int tempoEnvio = 2;
-    int qntEnviada;
+    int qntEnviada= 1;
 
     while (TRUE) {
-        sem_wait(&mutex);
+        sem_wait(&fabrica);
 
         sem_wait(&depositoCaneta.empty);
         pthread_mutex_lock(&depositoCaneta.mutex);
 
-        if(depositoCaneta.canetasEnviadas + depositoCaneta.canetas < MAX_CANETAS){
-            qntEnviada = depositoCaneta.canetas;
-        }
-        else{
-            qntEnviada = MAX_CANETAS - depositoCaneta.canetasEnviadas;
-            sem_post(&mutex);
-        }
-
         depositoCaneta.canetas -= qntEnviada;
         depositoCaneta.canetasEnviadas += qntEnviada;
-        printf("Depósito de Canetas: Enviadas %d canetas. Estoque: %d\n", qntEnviada, depositoCaneta.canetasEnviadas);
+        printf("Depósito de Canetas: Enviada 1 caneta. Estoque: %d\n", depositoCaneta.canetasEnviadas);
 
         pthread_mutex_unlock(&depositoCaneta.mutex);
 
@@ -206,7 +194,7 @@ int main(int argc, char *argv[]){
     sem_init(&depositoCaneta.empty, 0, MAX_CANETAS);
     sem_init(&depositoCaneta.full, 0, 0);
 
-    sem_init(&mutex, 0, 0);
+    sem_init(&fabrica, 0, 0);
 
     // Inicialização das threads
     pthread_t threads[5];
