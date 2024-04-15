@@ -24,14 +24,17 @@ typedef struct {
     sem_t full;  // Semáforo para indicar se o depósito de canetas está cheio
 } DepositoCaneta;
 
+typedef struct {
+    int count;
+    sem_t mutex;
+} Controle;
+
 // Variáveis globais
 DepositoMaterial depositoMaterial;
 DepositoCaneta depositoCaneta;
+Controle controleStruct;
 
 sem_t fabrica;
-sem_t mutex;
-
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Funções auxiliares
 void *deposito_material(){
@@ -40,7 +43,7 @@ void *deposito_material(){
     int tempoEnvio = 1;
 
     while (TRUE) { 
-        sem_wait(&mutex);
+        sem_wait(&controleStruct.mutex);
 
         sem_wait(&depositoMaterial.empty);
         sem_wait(&depositoMaterial.mutex);
@@ -75,7 +78,7 @@ void *fabrica_caneta(){
     int tempoFabricacao = 1;
 
     while (TRUE) {
-        sem_wait(&mutex);
+        sem_wait(&controleStruct.mutex);
 
         sem_wait(&depositoMaterial.full);
 
@@ -102,7 +105,9 @@ void *controle(){
     while(TRUE) {
         sem_wait(&depositoCaneta.mutex);
         if(depositoCaneta.canetasEnviadas < MAX_CANETAS){
-            sem_post(&mutex);
+            if(controleStruct.count == 0){
+                sem_post(&controleStruct.mutex);
+            }
         }
         sem_post(&depositoCaneta.mutex);
     }
@@ -175,19 +180,20 @@ int main(int argc, char *argv[]){
     // Inicializando as variáveis e semáforos
     depositoMaterial.material = 10;
     depositoMaterial.materialEnviado = 0;
-    depositoCaneta.canetas = 0;
-    depositoCaneta.canetasEnviadas = 0;
-
     sem_init(&depositoMaterial.mutex, 0, 1);
     sem_init(&depositoMaterial.empty, 0, depositoMaterial.material);
     sem_init(&depositoMaterial.full, 0, 0);
 
+    depositoCaneta.canetas = 0;
+    depositoCaneta.canetasEnviadas = 0;
     sem_init(&depositoCaneta.mutex, 0, 1);
     sem_init(&depositoCaneta.empty, 0, MAX_CANETAS);
     sem_init(&depositoCaneta.full, 0, 0);
 
+    controleStruct.count = 0;
+    sem_init(&controleStruct.mutex, 0, 0);
+
     sem_init(&fabrica, 0, 0);
-    sem_init(&mutex, 0, 0);
 
     // Inicialização das threads
     pthread_t threads[4];

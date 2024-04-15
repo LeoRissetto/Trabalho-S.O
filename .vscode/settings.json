@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "semaphore.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "__bit_reference": "c",
+        "bitset": "c"
     }
 }
