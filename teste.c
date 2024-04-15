@@ -5,7 +5,6 @@
 #include <unistd.h>
 
 #define MAX_CANETAS 5
-#define QNT_COMPRADA 1
 #define TRUE 1
 
 // Definição das estruturas de dados
@@ -30,9 +29,9 @@ DepositoMaterial depositoMaterial;
 DepositoCaneta depositoCaneta;
 
 sem_t fabrica;
-sem_t deposito;
+sem_t mutex;
 
-pthread_cond_t condicao = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Funções auxiliares
 void *deposito_material(){
@@ -41,23 +40,29 @@ void *deposito_material(){
     int tempoEnvio = 1;
 
     while (TRUE) { 
-        //checar se o deposito de canetas esta cheio
-        sem_wait(&depositoCaneta.empty);
+        sem_wait(&mutex);
 
         sem_wait(&depositoMaterial.empty);
         sem_wait(&depositoMaterial.mutex);
 
-        depositoMaterial.material -= qntEnviada;
-        depositoMaterial.materialEnviado += qntEnviada;
-        printf("Depósito de Material: Enviando %d unidades de matéria-prima.\n", qntEnviada);
-
-        for(int i = 0; i < qntEnviada; i++){
-            sem_post(&depositoMaterial.full);
+        if(depositoMaterial.material == 0){
+            qntEnviada = 0;
+            printf("Depósito de Material: Acabou a matéria-prima.\n");
+        }
+        else{
+            if(depositoMaterial.material < qntEnviada){
+                qntEnviada = depositoMaterial.material;
+            }
+            depositoMaterial.material -= qntEnviada;
+            depositoMaterial.materialEnviado += qntEnviada;
+            printf("Depósito de Material: Enviando %d unidades de matéria-prima.\n", qntEnviada);
         }
 
         sem_post(&depositoMaterial.mutex);
 
-        sem_post(&depositoCaneta.empty);
+        for(int i = 0; i < qntEnviada; i++){
+            sem_post(&depositoMaterial.full);
+        }
 
         sleep(tempoEnvio);
     }
@@ -70,12 +75,11 @@ void *fabrica_caneta(){
     int tempoFabricacao = 1;
 
     while (TRUE) {
-        //checar se o deposito de canetas esta cheio
-        sem_wait(&depositoCaneta.empty);
+        sem_wait(&mutex);
 
         sem_wait(&depositoMaterial.full);
-        sem_wait(&depositoMaterial.mutex);
 
+        sem_wait(&depositoMaterial.mutex);
         sem_wait(&depositoCaneta.mutex);
 
         depositoMaterial.materialEnviado--;
@@ -83,11 +87,9 @@ void *fabrica_caneta(){
         printf("Célula de fabricação de canetas: fabricou 1 caneta. Estoque: %d\n", depositoMaterial.materialEnviado);
 
         sem_post(&depositoCaneta.mutex);
-
-        sem_post(&fabrica);
         sem_post(&depositoMaterial.mutex);
 
-        sem_post(&depositoCaneta.empty);
+        sem_post(&fabrica);
 
         sleep(tempoFabricacao);
     }
@@ -98,7 +100,11 @@ void *fabrica_caneta(){
 void *controle(){
 
     while(TRUE) {
-        
+        sem_wait(&depositoCaneta.mutex);
+        if(depositoCaneta.canetasEnviadas < MAX_CANETAS){
+            sem_post(&mutex);
+        }
+        sem_post(&depositoCaneta.mutex);
     }
 
     return NULL;
@@ -106,8 +112,8 @@ void *controle(){
 
 void *deposito_caneta(){
 
-    int qntEnviada = 1;
     int tempoEnvio = 1;
+    int qntEnviada;
 
     while (TRUE) {
         sem_wait(&fabrica);
@@ -115,12 +121,22 @@ void *deposito_caneta(){
         sem_wait(&depositoCaneta.empty);
         sem_wait(&depositoCaneta.mutex);
 
-        depositoCaneta.canetasEnviadas += qntEnviada;
+        if(depositoCaneta.canetasEnviadas + depositoCaneta.canetas < MAX_CANETAS){
+            qntEnviada = depositoCaneta.canetas;
+        }
+        else{
+            qntEnviada = MAX_CANETAS - depositoCaneta.canetasEnviadas; 
+        }
+
         depositoCaneta.canetas -= qntEnviada;
+        depositoCaneta.canetasEnviadas += qntEnviada;
         printf("Depósito de Canetas: Enviadas %d canetas. Estoque: %d\n", qntEnviada, depositoCaneta.canetasEnviadas);
 
         sem_post(&depositoCaneta.mutex);
-        sem_post(&depositoCaneta.full);
+
+        for(int i = 0; i < qntEnviada; i++){
+            sem_post(&depositoCaneta.full);
+        }
 
         sleep(tempoEnvio);
     }
@@ -131,16 +147,23 @@ void *deposito_caneta(){
 void *comprador(){
 
     int tempoEspera = 1;
+    int qntComprada = 2;
 
     while (TRUE) {
         sem_wait(&depositoCaneta.full);
         sem_wait(&depositoCaneta.mutex);
 
-        depositoCaneta.canetasEnviadas -= QNT_COMPRADA;
-        printf("Comprador: Comprou %d canetas.\n", QNT_COMPRADA);
+        if(depositoCaneta.canetasEnviadas < qntComprada){
+            qntComprada = depositoCaneta.canetasEnviadas;
+        }
+        depositoCaneta.canetasEnviadas -= qntComprada;
+        printf("Comprador: Comprou %d canetas.\n", qntComprada);
 
         sem_post(&depositoCaneta.mutex);
-        sem_post(&depositoCaneta.empty);
+
+        for(int i = 0; i < qntComprada; i++){
+            sem_post(&depositoCaneta.empty);
+        }
 
         sleep(tempoEspera);
     }
@@ -164,6 +187,7 @@ int main(int argc, char *argv[]){
     sem_init(&depositoCaneta.full, 0, 0);
 
     sem_init(&fabrica, 0, 0);
+    sem_init(&mutex, 0, 0);
 
     // Inicialização das threads
     pthread_t threads[4];
