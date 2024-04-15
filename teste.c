@@ -35,8 +35,9 @@ void *deposito_material(){
 
     int qntEnviada = 5;
     int tempoEnvio = 3;
+    int stop = 0;
 
-    while (TRUE) { 
+    while (TRUE - stop) { 
         sem_wait(&depositoCaneta.empty);
 
         sem_wait(&depositoMaterial.empty);
@@ -44,6 +45,7 @@ void *deposito_material(){
 
         if(depositoMaterial.material == 0){
             qntEnviada = 0;
+            stop = 1;
             printf("Depósito de Material: Acabou a matéria-prima.\n");
         }
         else{
@@ -110,7 +112,6 @@ void *controle(){
 void *deposito_caneta(){
 
     int tempoEnvio = 2;
-    int qntEnviada= 1;
 
     while (TRUE) {
         sem_wait(&fabrica);
@@ -118,15 +119,13 @@ void *deposito_caneta(){
         sem_wait(&depositoCaneta.empty);
         pthread_mutex_lock(&depositoCaneta.mutex);
 
-        depositoCaneta.canetas -= qntEnviada;
-        depositoCaneta.canetasEnviadas += qntEnviada;
+        depositoCaneta.canetas--;
+        depositoCaneta.canetasEnviadas++;
         printf("Depósito de Canetas: Enviada 1 caneta. Estoque: %d\n", depositoCaneta.canetasEnviadas);
 
         pthread_mutex_unlock(&depositoCaneta.mutex);
 
-        for(int i = 0; i < qntEnviada; i++){
-            sem_post(&depositoCaneta.full);
-        }
+        sem_post(&depositoCaneta.full);
 
         sleep(tempoEnvio);
     }
