@@ -89,7 +89,7 @@ void *fabrica_caneta(){
         sem_post(&depositoCaneta.mutex);
         sem_post(&depositoMaterial.mutex);
 
-        ptheard_cond_signal(&condition);
+        pthreard_cond_signal(&condition);
 
         sleep(tempoFabricacao);
     }
