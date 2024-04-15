@@ -65,6 +65,8 @@ void *deposito_material(){
             sem_post(&depositoMaterial.full);
         }
 
+        sem_post(&depositoCaneta.empty);
+
         sleep(tempoEnvio);
     }
 
@@ -92,6 +94,8 @@ void *fabrica_caneta(){
         sem_post(&depositoMaterial.mutex);
 
         pthread_cond_signal(&condition);
+
+        sem_post(&depositoCaneta.empty);
 
         sleep(tempoFabricacao);
     }
