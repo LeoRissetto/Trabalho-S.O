@@ -29,6 +29,7 @@ DepositoMaterial depositoMaterial;
 DepositoCaneta depositoCaneta;
 
 pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Funções auxiliares
 void *deposito_material(){
@@ -113,11 +114,11 @@ void *deposito_caneta(){
     int qntEnviada;
 
     while (TRUE) {
-        pthread_mutex_lock(&depositoCaneta.mutex);
+        pthread_mutex_lock(&mutex);
         while(depositoCaneta.canetas == 0){
             pthread_cond_wait(&condition, &depositoCaneta.mutex);
         }
-        pthread_mutex_unlock(&depositoCaneta.mutex);
+        pthread_mutex_unlock(&mutex);
 
         sem_wait(&depositoCaneta.empty);
         pthread_mutex_lock(&depositoCaneta.mutex);
