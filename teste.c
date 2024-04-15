@@ -83,7 +83,7 @@ void *fabrica_caneta(){
 
         depositoMaterial.materialEnviado--;
         depositoCaneta.canetas++;
-        printf("Célula de fabricação de canetas: fabricou 1 caneta. Estoque: %d\n", depositoMaterial.materialEnviado);
+        printf("Célula de fabricação de canetas: fabricou 1 caneta. Estoque de Material: %d\n", depositoMaterial.materialEnviado);
 
         pthread_mutex_unlock(&depositoCaneta.mutex);
         pthread_mutex_unlock(&depositoMaterial.mutex);
