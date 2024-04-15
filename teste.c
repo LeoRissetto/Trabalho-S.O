@@ -40,11 +40,9 @@ void *deposito_material(){
     int qntEnviada = 1;
     int tempoEnvio = 1;
 
-    while (TRUE) {
-        
+    while (TRUE) { 
         //checar se o deposito de canetas esta cheio
         sem_wait(&depositoCaneta.empty);
-        sem_post(&depositoCaneta.empty);
 
         sem_wait(&depositoMaterial.empty);
         sem_wait(&depositoMaterial.mutex);
@@ -59,6 +57,8 @@ void *deposito_material(){
 
         sem_post(&depositoMaterial.mutex);
 
+        sem_post(&depositoCaneta.empty);
+
         sleep(tempoEnvio);
     }
 
@@ -70,13 +70,12 @@ void *fabrica_caneta(){
     int tempoFabricacao = 1;
 
     while (TRUE) {
-
         //checar se o deposito de canetas esta cheio
         sem_wait(&depositoCaneta.empty);
-        sem_post(&depositoCaneta.empty);
 
         sem_wait(&depositoMaterial.full);
         sem_wait(&depositoMaterial.mutex);
+
         sem_wait(&depositoCaneta.mutex);
 
         depositoMaterial.materialEnviado--;
@@ -84,8 +83,11 @@ void *fabrica_caneta(){
         printf("Célula de fabricação de canetas: fabricou 1 caneta. Estoque: %d\n", depositoMaterial.materialEnviado);
 
         sem_post(&depositoCaneta.mutex);
-        sem_post(&depositoMaterial.mutex);
+
         sem_post(&fabrica);
+        sem_post(&depositoMaterial.mutex);
+
+        sem_post(&depositoCaneta.empty);
 
         sleep(tempoFabricacao);
     }
@@ -109,6 +111,7 @@ void *deposito_caneta(){
 
     while (TRUE) {
         sem_wait(&fabrica);
+
         sem_wait(&depositoCaneta.empty);
         sem_wait(&depositoCaneta.mutex);
 
