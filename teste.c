@@ -28,8 +28,7 @@ typedef struct {
 DepositoMaterial depositoMaterial;
 DepositoCaneta depositoCaneta;
 
-pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+sem_t mutex;
 
 // Funções auxiliares
 void *deposito_material(){
@@ -82,6 +81,8 @@ void *fabrica_caneta(){
 
         pthread_mutex_lock(&depositoCaneta.mutex);
 
+        int x = depositoCaneta.canetas;
+
         depositoMaterial.materialEnviado--;
         depositoCaneta.canetas++;
         printf("Célula de fabricação de canetas: fabricou 1 caneta. Estoque de Material: %d\n", depositoMaterial.materialEnviado);
@@ -89,7 +90,9 @@ void *fabrica_caneta(){
         pthread_mutex_unlock(&depositoCaneta.mutex);
         pthread_mutex_unlock(&depositoMaterial.mutex);
 
-        pthread_cond_signal(&condition);
+        if(x == 0){
+            sem_post(&mutex);
+        }
 
         sem_post(&depositoCaneta.empty);
 
@@ -114,11 +117,7 @@ void *deposito_caneta(){
     int qntEnviada;
 
     while (TRUE) {
-        pthread_mutex_lock(&mutex);
-        while(depositoCaneta.canetas == 0){
-            pthread_cond_wait(&condition, &depositoCaneta.mutex);
-        }
-        pthread_mutex_unlock(&mutex);
+        sem_wait(&mutex);
 
         sem_wait(&depositoCaneta.empty);
         pthread_mutex_lock(&depositoCaneta.mutex);
@@ -127,7 +126,8 @@ void *deposito_caneta(){
             qntEnviada = depositoCaneta.canetas;
         }
         else{
-            qntEnviada = MAX_CANETAS - depositoCaneta.canetasEnviadas; 
+            qntEnviada = MAX_CANETAS - depositoCaneta.canetasEnviadas;
+            sem_post(&mutex);
         }
 
         depositoCaneta.canetas -= qntEnviada;
@@ -205,6 +205,8 @@ int main(int argc, char *argv[]){
     pthread_mutex_init(&depositoCaneta.mutex, NULL);
     sem_init(&depositoCaneta.empty, 0, MAX_CANETAS);
     sem_init(&depositoCaneta.full, 0, 0);
+
+    sem_init(&mutex, 0, 0);
 
     // Inicialização das threads
     pthread_t threads[5];
