@@ -4,7 +4,7 @@
 #include <semaphore.h>
 #include <unistd.h>
 
-#define MAX_CANETAS 5
+#define MAX_CANETAS 2
 #define TRUE 1
 
 // Definição das estruturas de dados
