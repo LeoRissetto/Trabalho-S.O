@@ -27,7 +27,7 @@ typedef struct {
 DepositoMaterial depositoMaterial;
 DepositoCaneta depositoCaneta;
 
-sem_t fabrica; // Semáforo para indicar a quantidade de canetas disponiveis para enviar
+sem_t canetasFabrica; // Semáforo para indicar a quantidade de canetas disponiveis para enviar
 
 // Funções correspondentes as diferentes threads
 void *deposito_material(){
@@ -92,7 +92,7 @@ void *fabrica_caneta(){
         printf("Célula de fabricação de canetas: fabricou 1 caneta. Estoque de Material: %d\n", depositoMaterial.materialFabrica);
 
         //Adiciona no semaforo a quantidade de canetas que podem ser enviadas
-        sem_post(&fabrica);
+        sem_post(&canetasFabrica);
 
         pthread_mutex_unlock(&depositoCaneta.mutex);
         pthread_mutex_unlock(&depositoMaterial.mutex);
@@ -120,7 +120,7 @@ void *deposito_caneta(){
 
     while (TRUE) {
         //Espera ter canetas disponiveis para serem enviadas
-        sem_wait(&fabrica);
+        sem_wait(&canetasFabrica);
 
         //Checa se o deposito de caneta esta cheio
         sem_wait(&depositoCaneta.empty);
@@ -198,7 +198,7 @@ void *encerrar(){
             pthread_mutex_destroy(&depositoMaterial.mutex);
             sem_destroy(&depositoMaterial.full);
 
-            sem_destroy(&fabrica);
+            sem_destroy(&canetasFabrica);
 
             exit(0);
         }
@@ -223,7 +223,7 @@ int main(int argc, char *argv[]){
     sem_init(&depositoCaneta.empty, 0, MAX_CANETAS);
     sem_init(&depositoCaneta.full, 0, 0);
 
-    sem_init(&fabrica, 0, 0);
+    sem_init(&canetasFabrica, 0, 0);
 
     // Inicialização das threads
     pthread_t threads[5];
