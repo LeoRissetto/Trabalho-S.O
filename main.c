@@ -176,6 +176,11 @@ void *comprador(){
         depositoCaneta.canetasEnviadas -= qntComprada;
         printf("Comprador: Comprou %d canetas.\n", qntComprada);
 
+        //Decrese o semaforo de acordo com a quantidade comprada
+        for(int i = 1; i < qntComprada; i++){
+            sem_wait(&depositoCaneta.full);
+        }
+
         //Aumenta os espacos livres do deposito
         for(int i = 0; i < qntComprada; i++){
             sem_post(&depositoCaneta.empty);
