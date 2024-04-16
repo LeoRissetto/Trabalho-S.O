@@ -31,6 +31,7 @@ DepositoCaneta depositoCaneta;
 sem_t fabrica; // Semáforo para indicar se ha canetas disponiveis para enviar
 
 pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Funções auxiliares
 void *deposito_material(){
@@ -41,10 +42,11 @@ void *deposito_material(){
 
     while (TRUE - stop) {
         //Verifica se o deposito de canetas esta cheio
-        pthread_mutex_lock(&depositoCaneta.mutex);
+        pthread_mutex_lock(&mutex);
         while(depositoCaneta.canetasEnviadas >= MAX_CANETAS){
             pthread_cond_wait(&condition, &depositoCaneta.mutex);
         }
+        pthread_mutex_unlock(&mutex);
 
         pthread_mutex_lock(&depositoMaterial.mutex);
 
@@ -69,7 +71,6 @@ void *deposito_material(){
         }
 
         pthread_mutex_unlock(&depositoMaterial.mutex);
-        pthread_mutex_unlock(&depositoCaneta.mutex);
 
         sleep(tempoEnvio);
     }
@@ -83,14 +84,17 @@ void *fabrica_caneta(){
 
     while (TRUE) {
         //Verifica se o deposito de canetas esta cheio
-        pthread_mutex_lock(&depositoCaneta.mutex);
+        pthread_mutex_lock(&mutex);
         while(depositoCaneta.canetasEnviadas >= MAX_CANETAS){
             pthread_cond_wait(&condition, &depositoCaneta.mutex);
         }
+        pthread_mutex_unlock(&mutex);
 
         //Verifica se tem materia prima para fabricar
         sem_wait(&depositoMaterial.full);
         pthread_mutex_lock(&depositoMaterial.mutex);
+
+        pthread_mutex_lock(&depositoCaneta.mutex);
 
         //Fabrica uma caneta
         depositoMaterial.materialEnviado--;
@@ -100,8 +104,8 @@ void *fabrica_caneta(){
         //Adiciona no semaforo a quantidade de canetas que podem ser enviadas
         sem_post(&fabrica);
 
-        pthread_mutex_unlock(&depositoMaterial.mutex);
         pthread_mutex_unlock(&depositoCaneta.mutex);
+        pthread_mutex_unlock(&depositoMaterial.mutex);
 
         sleep(tempoFabricacao);
     }
