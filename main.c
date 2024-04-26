@@ -98,6 +98,7 @@ void *fabrica_caneta(void *arg){
 
         //Verifica se tem materia prima para fabricar
         sem_wait(&fabricaCaneta.semMaterial);
+
         pthread_mutex_lock(&fabricaCaneta.mutexCaneta);
         pthread_mutex_lock(&fabricaCaneta.mutexMaterial);
 
@@ -128,6 +129,11 @@ void *controle(){
         if(depositoCaneta.canetas + fabricaCaneta.canetas >= max_canetas) {
             //bloqueia a fabrica de canetas e o deposito de material
         }
+        if(depositoMaterial.material + fabricaCaneta.material + fabricaCaneta.canetas + depositoCaneta.canetas == 0) {
+            //encerra o programa
+        }
+        pthread_mutex_unlock(&depositoCaneta.mutex);
+        pthread_mutex_unlock(&fabricaCaneta.mutexCaneta);
     }
 
     return NULL;
@@ -141,6 +147,7 @@ void *deposito_caneta(){
 
         //Checa se o deposito de caneta esta cheio
         sem_wait(&depositoCaneta.empty);
+
         pthread_mutex_lock(&fabricaCaneta.mutexCaneta);
         pthread_mutex_lock(&depositoCaneta.mutex);
 
@@ -169,6 +176,7 @@ void *comprador(void *arg){
     while (TRUE) {
         //Verifica se ha canetas disponiveis para a compra
         sem_wait(&depositoCaneta.full);
+
         pthread_mutex_lock(&depositoCaneta.mutex);
 
         qntComprada = atoi(argv[6]);
