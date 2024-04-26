@@ -71,8 +71,8 @@ void *deposito_material(void *arg){
             printf("Depósito de Material: Enviando %d unidades de matéria-prima.\n", qntEnviada);
         }
 
-        pthread_mutex_unlock(&depositoMaterial.mutex);
         pthread_mutex_unlock(&fabricaCaneta.mutexMaterial);
+        pthread_mutex_unlock(&depositoMaterial.mutex);
 
         //Adiciona ao semaforo a quantidade enviada de material
         for(int i = 0; i < qntEnviada; i++){
@@ -107,8 +107,8 @@ void *fabrica_caneta(void *arg){
         fabricaCaneta.material = 0;
         printf("Célula de fabricação de canetas: fabricou %d canetas", fabricaCaneta.canetas);
 
-        pthread_mutex_unlock(&fabricaCaneta.mutexCaneta);
         pthread_mutex_unlock(&fabricaCaneta.mutexMaterial);
+        pthread_mutex_unlock(&fabricaCaneta.mutexCaneta);
 
         //Adiciona no semaforo a quantidade de canetas que podem ser enviadas
         for(int i = 0; i < qntFabricada; i++) {
