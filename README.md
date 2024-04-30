@@ -5,7 +5,7 @@ Projeto da disciplina SSC0640 - Sistemas Operacionais I, ministrada pelo profess
 - Leonardo Gueno Rissetto 13676482
 - Lucas Lima Romero 13676325
 - Luciano Gonçalves Lopes Filho 13676520
-- Thiago Kashivagi Gonçalves 13676579
+- Thiago Kashivagui Gonçalves 13676579
   
 ## Detalhes sobre o Trabalho
 Este trabalho visa desenvolver uma aplicação para simular uma fábrica de canetas em C, utilizando Pthreads, 
