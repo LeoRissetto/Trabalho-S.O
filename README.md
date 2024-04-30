@@ -14,4 +14,4 @@ as quais interagem nas atividades de: fabricação de canetas, armazenamento da 
 e na compra/venda. 
 
 ## Observações
-Para rodar o programa usar gcc -o executavel codigo_fonte.c -lpthread
+Para rodar o programa usar gcc -o executavel main.c -lpthread

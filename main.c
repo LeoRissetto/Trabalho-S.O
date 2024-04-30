@@ -1,3 +1,14 @@
+/*
+Leonardo Gueno Rissetto 13676482
+Lucas Lima Romero 13676325
+Luciano Gonçalves Lopes Filho 13676520
+Marco Antonio Gaspar Garcia 11833581
+Thiago Kashivagi Gonçalves 13676579
+
+Para compilar:  gcc -o executavel main.c -lpthread
+Para rodar:     ./executavel 1 2 3 4 5 6 7
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -54,7 +65,8 @@ void *deposito_material(void *arg)
             printf("Depósito de Material: Acabou a matéria-prima.\n");
         }
         else
-        {
+        {   
+            // Se houver menos matéria prima do que a qtdEnviada normalmente:
             if (materialDeposito < qntEnviada)
             {
                 qntEnviada = materialDeposito;
@@ -239,15 +251,15 @@ int main(int argc, char *argv[])
     sem_init(&semCanetasDeposito, 0, 0);
 
     // Inicialização das threads
-    pthread_t threads[5];
+    pthread_t threads[4];
     pthread_create(&threads[0], NULL, deposito_material, (void *)argv);
     pthread_create(&threads[1], NULL, fabrica_caneta, (void *)argv);
-    pthread_create(&threads[3], NULL, controle, NULL);
-    pthread_create(&threads[4], NULL, deposito_caneta, NULL);
-    pthread_create(&threads[5], NULL, comprador, (void *)argv);
+    pthread_create(&threads[2], NULL, controle, NULL);
+    pthread_create(&threads[3], NULL, deposito_caneta, NULL);
+    pthread_create(&threads[4], NULL, comprador, (void *)argv);
 
     // Executa as threads
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 4; i++)
     {
         pthread_join(threads[i], NULL);
     }
