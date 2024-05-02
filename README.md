@@ -1,10 +1,10 @@
 # Trabalho Prático de Sistemas Operacionais
 Projeto da disciplina SSC0640 - Sistemas Operacionais I, ministrada pelo professor Paulo Sergio Lopes de Souza.
 
-- Marco Antonio Gaspar Garcia 11833581
 - Leonardo Gueno Rissetto 13676482
 - Lucas Lima Romero 13676325
 - Luciano Gonçalves Lopes Filho 13676520
+- Marco Antonio Gaspar Garcia 11833581
 - Thiago Kashivagui Gonçalves 13676579
   
 ## Detalhes sobre o Trabalho
