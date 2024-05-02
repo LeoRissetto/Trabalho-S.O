@@ -1,14 +1,3 @@
-/*
-Leonardo Gueno Rissetto 13676482
-Lucas Lima Romero 13676325
-Luciano Gonçalves Lopes Filho 13676520
-Marco Antonio Gaspar Garcia 11833581
-Thiago Kashivagi Gonçalves 13676579
-
-Para compilar:  gcc -o executavel main.c -lpthread
-Para rodar:     ./executavel 1 2 3 4 5 6 7
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -31,7 +20,6 @@ pthread_mutex_t mutexCanetasFabrica = PTHREAD_MUTEX_INITIALIZER;  // Mutex para 
 sem_t semMaterialFabrica;                                         // Semaforo para indicar a quantidade de material na fabrica
 sem_t semCanetasFabrica;                                          // Semáforo para indicar a quantidade de canetas disponiveis para enviar
 
-// Controle
 
 // Deposito de Canetas
 int max_canetas;                                                  // Quantidade maxima de canetas que podem ser armazenadas no deposito
@@ -39,6 +27,12 @@ int canetasDeposito = 0;                                          // Quantidade 
 pthread_mutex_t mutexCanetasDeposito = PTHREAD_MUTEX_INITIALIZER; // Mutex para alterar as variaveis (zona critica)
 sem_t semEspacosVaziosDeposito;                                   // Semáforo para indicar a quantidade de espacos vazio no deposito
 sem_t semCanetasDeposito;                                         // Semáforo para indicar a quantidade de canetas no deposito
+
+// Controle
+pthread_mutex_t mutexLockDeposito = PTHREAD_MUTEX_INITIALIZER;
+int lockDeposito = -1;
+pthread_mutex_t mutexX = PTHREAD_MUTEX_INITIALIZER;
+int x = 0;
 
 // Funções correspondentes as diferentes threads
 void *deposito_material(void *arg)
@@ -65,8 +59,7 @@ void *deposito_material(void *arg)
             printf("Depósito de Material: Acabou a matéria-prima.\n");
         }
         else
-        {   
-            // Se houver menos matéria prima do que a qtdEnviada normalmente:
+        {
             if (materialDeposito < qntEnviada)
             {
                 qntEnviada = materialDeposito;
@@ -99,19 +92,22 @@ void *fabrica_caneta(void *arg)
 
     while (TRUE)
     {
-        // Verifica se tem espaco no deposito de canetas
-        sem_wait(&semEspacosVaziosDeposito);
-
         // Verifica se tem materia prima para fabricar
         sem_wait(&semMaterialFabrica);
 
         pthread_mutex_lock(&mutexMaterialFabrica);
         pthread_mutex_lock(&mutexCanetasFabrica);
 
+        // Controle
+        pthread_mutex_lock(&mutexX);
+
         // Fabrica a/as canetas
-        materialFabrica--;
-        canetasFabrica++;
-        printf("Célula de fabricação de canetas: fabricou 1 caneta\n");
+        // USAR UM MUTEX
+        materialFabrica -= x;
+        canetasFabrica += x;
+        printf("Célula de fabricação de canetas: fabricou %d caneta\n", x);
+
+        pthread_mutex_unlock(&mutexX);
 
         pthread_mutex_unlock(&mutexCanetasFabrica);
         pthread_mutex_unlock(&mutexMaterialFabrica);
@@ -126,15 +122,26 @@ void *fabrica_caneta(void *arg)
 }
 
 void *controle()
-{
+// O depósito de canetas deve informar ao controle a quantidade de slots disponíveis.
+// -> sem_t
+// O controle deve informar a fábrica de canetas a quantidade que deve ser mandada.
+{ 
+    int sem_val;
     while (TRUE)
     {
+        /////////////////////
         pthread_mutex_lock(&mutexMaterialDeposito);
 
         pthread_mutex_lock(&mutexMaterialFabrica);
         pthread_mutex_lock(&mutexCanetasFabrica);
 
         pthread_mutex_lock(&mutexCanetasDeposito);
+
+        pthread_mutex_lock(&mutexX);
+        sem_getvalue(&semEspacosVaziosDeposito, &sem_val);
+        x = sem_val - canetasFabrica;
+        x = x > materialFabrica ? materialFabrica : x;
+        pthread_mutex_unlock(&mutexX);
 
         if(materialDeposito + materialFabrica +
         canetasFabrica + canetasDeposito == 0) {
@@ -166,6 +173,9 @@ void *deposito_caneta()
         canetasFabrica--;
         canetasDeposito++;
         printf("Depósito de Canetas: Enviada 1 caneta. Estoque de canetas: %d\n", canetasDeposito);
+
+        // Informa ao controle os slots vazios
+        sem_wait(&semEspacosVaziosDeposito);
 
         pthread_mutex_unlock(&mutexCanetasDeposito);
         pthread_mutex_unlock(&mutexCanetasFabrica);
@@ -251,15 +261,15 @@ int main(int argc, char *argv[])
     sem_init(&semCanetasDeposito, 0, 0);
 
     // Inicialização das threads
-    pthread_t threads[4];
+    pthread_t threads[5];
     pthread_create(&threads[0], NULL, deposito_material, (void *)argv);
     pthread_create(&threads[1], NULL, fabrica_caneta, (void *)argv);
-    pthread_create(&threads[2], NULL, controle, NULL);
-    pthread_create(&threads[3], NULL, deposito_caneta, NULL);
-    pthread_create(&threads[4], NULL, comprador, (void *)argv);
+    pthread_create(&threads[3], NULL, controle, NULL);
+    pthread_create(&threads[4], NULL, deposito_caneta, NULL);
+    pthread_create(&threads[5], NULL, comprador, (void *)argv);
 
     // Executa as threads
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 5; i++)
     {
         pthread_join(threads[i], NULL);
     }
