@@ -45,6 +45,11 @@ pthread_mutex_t mutexCanetasDeposito = PTHREAD_MUTEX_INITIALIZER; // Mutex para 
 sem_t semEspacosVaziosDeposito;                                   // Semáforo para indicar a quantidade de espaços vazios no depósito
 sem_t semCanetasDeposito;                                         // Semáforo para indicar a quantidade de canetas no depósito
 
+// Comprador
+int totalVendas;
+pthread_mutex_t mutexTotalVendas = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t condTotalVendas = PTHREAD_COND_INITIALIZER;
+
 // Funções correspondentes as diferentes threads
 void *deposito_material(void *arg)
 {
@@ -108,6 +113,18 @@ void *fabrica_caneta(void *arg)
 
     while (TRUE)
     {
+        pthread_mutex_lock(&mutexTotalVendas);
+        if (totalVendas < atoi(argv[1]))
+        {
+            pthread_cond_wait(&condTotalVendas, &mutexTotalVendas);
+        }
+        else
+        {
+            pthread_mutex_unlock(&mutexTotalVendas);
+            break;
+        }
+        pthread_mutex_unlock(&mutexTotalVendas);
+
         // Espera um sinal do controle para prosseguir
         pthread_mutex_lock(&mutexControle);
         pthread_cond_wait(&condControle, &mutexControle);
@@ -154,10 +171,24 @@ void *fabrica_caneta(void *arg)
     return NULL;
 }
 
-void *controle()
+void *controle(void *arg)
 {
+    char **argv = (char **)arg;
+
     while (TRUE)
     {
+        pthread_mutex_lock(&mutexTotalVendas);
+        if (totalVendas < atoi(argv[1]))
+        {
+            pthread_cond_wait(&condTotalVendas, &mutexTotalVendas);
+        }
+        else
+        {
+            pthread_mutex_unlock(&mutexTotalVendas);
+            break;
+        }
+        pthread_mutex_unlock(&mutexTotalVendas);
+
         pthread_mutex_lock(&mutexControle);
 
         pthread_mutex_lock(&mutexCanetasFabrica);
@@ -178,10 +209,24 @@ void *controle()
     return NULL;
 }
 
-void *deposito_caneta()
+void *deposito_caneta(void *arg)
 {
+    char **argv = (char **)arg;
+
     while (TRUE)
     {
+        pthread_mutex_lock(&mutexTotalVendas);
+        if (totalVendas < atoi(argv[1]))
+        {
+            pthread_cond_wait(&condTotalVendas, &mutexTotalVendas);
+        }
+        else
+        {
+            pthread_mutex_unlock(&mutexTotalVendas);
+            break;
+        }
+        pthread_mutex_unlock(&mutexTotalVendas);
+
         // Espera ter canetas disponíveis para serem enviadas
         sem_wait(&semCanetasFabrica);
 
@@ -217,6 +262,18 @@ void *comprador(void *arg)
 
     while (TRUE)
     {
+        pthread_mutex_lock(&mutexTotalVendas);
+        if (totalVendas < atoi(argv[1]))
+        {
+            pthread_cond_wait(&condTotalVendas, &mutexTotalVendas);
+        }
+        else
+        {
+            pthread_mutex_unlock(&mutexTotalVendas);
+            break;
+        }
+        pthread_mutex_unlock(&mutexTotalVendas);
+
         // Verifica se há canetas disponíveis para a compra
         sem_wait(&semCanetasDeposito);
 
@@ -239,6 +296,10 @@ void *comprador(void *arg)
         // Compra as canetas
         canetasDeposito -= qntComprada;
         printf("Comprador: Comprou %d canetas.\n", qntComprada);
+
+        pthread_mutex_lock(&mutexTotalVendas);
+        totalVendas += qntComprada;
+        pthread_mutex_unlock(&mutexTotalVendas);
 
         // Aumenta os espaços livres do depósito
         for (int i = 0; i < qntComprada; i++)
@@ -281,9 +342,19 @@ int main(int argc, char *argv[])
     pthread_t threads[5];
     pthread_create(&threads[0], NULL, deposito_material, (void *)argv);
     pthread_create(&threads[1], NULL, fabrica_caneta, (void *)argv);
-    pthread_create(&threads[2], NULL, controle, NULL);
-    pthread_create(&threads[3], NULL, deposito_caneta, NULL);
+    pthread_create(&threads[2], NULL, controle, (void *)argv);
+    pthread_create(&threads[3], NULL, deposito_caneta, (void *)argv);
     pthread_create(&threads[4], NULL, comprador, (void *)argv);
+
+    while (TRUE)
+    {
+        pthread_mutex_lock(&mutexTotalVendas);
+        if (totalVendas < atoi(argv[1]))
+        {
+            pthread_cond_broadcast(&condTotalVendas);
+        }
+        pthread_mutex_unlock(&mutexTotalVendas);
+    }
 
     // Aguarda o término das Threads
     for (int i = 0; i < 5; i++)
