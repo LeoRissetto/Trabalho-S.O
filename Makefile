@@ -1,5 +1,12 @@
+FLAGS = -Wall -Werror -Wpedantic -fsanitize=address -lpthread
+
 all:
-	gcc main.c -o programa -lpthread
+	gcc $(FLAGS) main.c -o program
 
 run:
-	./programa 10 2 3 3 3 5 7
+	./program 10 2 1 1 3 5 1
+	./program 1 1 1 1 1 1 1
+	
+clean:
+	rm program
+
